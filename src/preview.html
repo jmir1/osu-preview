@@ -94,7 +94,7 @@
             var osufile;
             !async function () {
                 var self = this;
-                const response = await fetch("https://dev.catboy.best/api/b/" + beatmapID);
+                const response = await fetch("https://catboy-proxy.jmir.xyz/b/" + beatmapID);
                 const data = await response.json();
                 console.log(data);
                 setID = data.ParentSetID;
