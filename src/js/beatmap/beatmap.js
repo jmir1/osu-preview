@@ -29,6 +29,8 @@ function Beatmap(osu)
     // [HitObjects]
     this.HitObjects = [];
 
+    // [Mods]
+    this.HardRock = false;
 
     var stream = osu.replace(/\r\n?/g, '\n').split('\n').reverse(),
         currentSection, line;

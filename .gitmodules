@@ -1,3 +1,6 @@
 [submodule "src/zip.js"]
 	path = src/zip.js
 	url = https://github.com/gildas-lormeau/zip.js
+[submodule "src/js-md5"]
+	path = src/js-md5
+	url = https://github.com/emn178/js-md5.git

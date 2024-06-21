@@ -37,6 +37,10 @@ HitCircle.prototype.draw = function(time, ctx)
     }
     ctx.globalAlpha = Math.max(0, Math.min(opacity, 1));
 
+    if (this.beatmap.HardRock) {
+        this.position.y = this.position.y * -1;
+    }
+
     this.drawCircle(this.position, ctx);
     this.drawText(this.position, this.combo, 0, ctx);
     if (dt >= 0)

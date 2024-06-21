@@ -18,6 +18,7 @@
         <button value="1.5">DT</button>
         <button class="e" value="1">-</button>
         <button value="0.75">HT</button>
+        <button id="hardrock">HR</button>
     </div>
     <div id="mania">
         <button value="1">+</button>
@@ -67,6 +68,7 @@
     <script src="js/mania/holdnote.js"></script>
 
     <script type="text/javascript" src="zip.js/dist/zip.min.js"></script>
+    <script type="text/javascript" src="js-md5/build/md5.min.js"></script>
     <script src="js/preview.js"></script>
     <script src="js/viewbox.js"></script>
 
@@ -84,7 +86,7 @@
 
             var beatmapID = isNaN(location.hash.split('#')[1]) ? 75 : location.hash.split('#')[1];
             var setID;
-            var osufilename;
+            var osufile_checksum;
             var audiofilename;
             var audioblob;
             var bgfilename;
@@ -92,19 +94,19 @@
             var osufile;
             !async function () {
                 var self = this;
-                const response = await fetch("https://api.chimu.moe/v1/map/" + beatmapID);
+                const response = await fetch("https://dev.catboy.best/api/b/" + beatmapID);
                 const data = await response.json();
                 console.log(data);
-                setID = data.ParentSetId;
-                osufilename = data.OsuFile;
+                setID = data.ParentSetID;
+                osufile_checksum = data.FileMD5;
                 const zipWriter = new zip.ZipWriter(new zip.Data64URIWriter("application/zip"));
-                var response2 = await fetch("https://chimu.moe" + data.DownloadPath);
+                var mapset_response = await fetch("https://catboy.best/d/" + setID);
                 
-                if (response2.status >= 400 && response2.status < 600) {
+                if (mapset_response.status >= 400 && mapset_response.status < 600) {
                     $('#title a').text("beatmap not found on mirror, sorry");
                     return;
                 }
-                var blob = await response2.blob();
+                var blob = await mapset_response.blob();
                 console.log("osu zip file: " + URL.createObjectURL(blob));
                 const reader = new zip.ZipReader(new zip.BlobReader(blob));
                 // get all entries from the zip
@@ -112,19 +114,17 @@
                 if (entries.length) {
                     console.log(entries);
                     // get bg filename
-                    var found = false;
-                    for (entry in entries) {
-                        if (entries[entry].filename === osufilename) {
-                            found = true;
-                            let text = await entries[entry].getData(
-                                // writer
-                                new zip.TextWriter()
-                            );
+                    for (entry in entries.sort((a, b) => a.filename.endsWith(".osu") ? -1 : 1)) {
+                        let text = await entries[entry].getData(
+                            // writer
+                            new zip.TextWriter()
+                        );
+                        let md5sum = md5(text);
+                        if (md5sum === osufile_checksum) {
                             osufile = text;
                             console.log(text);
                             let bgmatch = text.match(/(?<=0,0,").+(?=")/);
                             if (bgmatch) {
-                                console.log("yay")
                                 bgfilename = bgmatch[0];
                                 console.log(bgfilename);
                             }
@@ -133,30 +133,7 @@
                                 audiofilename = audiomatch[0];
                                 console.log(audiofilename);
                             }
-                        }
-                    }
-                    if (!found) {
-                        for (entry in entries) {
-                            let string1 = entries[entry].filename.replace(/[^a-zA-Z]/g, "");
-                            let string2 = osufilename.replace(/[^a-zA-Z]/g, "");
-                            if (string1 === string2) {
-                                let text = await entries[entry].getData(
-                                    // writer
-                                    new zip.TextWriter()
-                                );
-                                osufile = text;
-                                console.log(text);
-                                let bgmatch = text.match(/(?<=0,0,").+(?=")/);
-                                if (bgmatch) {
-                                    bgfilename = bgmatch[0];
-                                    console.log(bgfilename);
-                                }
-                                let audiomatch = text.match(/(?<=AudioFilename: ).+(?=)/);
-                                if (audiomatch) {
-                                    audiofilename = audiomatch[0];
-                                    console.log(audiofilename);
-                                }
-                            }
+                            break;
                         }
                     }
                     //make bg blob
@@ -288,8 +265,8 @@
             audio.volume = this.value / 100;
         });
 
-        $('#speed button').on('click', function () {
-            $('#speed .e').removeClass('e');
+        $('#speed button:not(#hardrock)').on('click', function () {
+            $('#speed .e:not(#hardrock)').removeClass('e');
             audio.playbackRate = $(this).addClass('e').val();
         });
 
@@ -299,6 +276,18 @@
                 preview.beatmap.scrollSpeed += val;
                 $('#scroll').text(preview.beatmap.scrollSpeed);
                 $(audio).trigger('play');
+            }
+        });
+
+        $('#hardrock').on('click', function () {
+            if (preview.beatmap.HardRock) {
+                preview.beatmap.HardRock = false
+                $('#hardrock').removeClass('e');
+                $('canvas').css('transform-origin: center; transform: rotate(0deg);');
+            } else {
+                preview.beatmap.HardRock = true
+                $('#hardrock').addClass('e');
+                $('canvas').css('transform-origin: center; transform: rotate(180deg);');
             }
         });
 
